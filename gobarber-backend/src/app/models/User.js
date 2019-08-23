@@ -12,7 +12,7 @@ class User extends Model {
         provider: Sequelize.BOOLEAN
       },
       {
-        sequelize
+        sequelize // Passando a conexao (instancia do sequelize com o databaseConfig)
       }
     );
 
@@ -23,6 +23,10 @@ class User extends Model {
     });
 
     return this;
+  }
+
+  static associate(models) {
+    this.belongsTo(models.File, { foreignKey: 'avatar_id' }); // Associando o avatar_id ao User
   }
 
   checkPassword(password) {
