@@ -76,12 +76,15 @@ class AppointmentController {
     if(checkAvailability) {
       return res.status(400).json({ error: 'Appointment is not available' });
     }
-
-    const appointment = await Appointment.create({
-      user_id: req.userId,
-      provider_id,
-      date
-    });
+ 
+    let appointment = null;
+    try {
+        appointment = await Appointment.create({
+        user_id: req.userId,
+        provider_id,
+        date
+      });
+    
 
     const user = await User.findByPk(req.userId);
     const formattedDate = format(hourStart, "'dia' dd 'de' MMMM', as' H:mm'h'", { locale: pt });
@@ -90,6 +93,9 @@ class AppointmentController {
       content: `Novo agendamento de ${user.name} para o ${formattedDate}`,
       user: provider_id
     });
+  } catch(err) {
+    console.log("ERRO - ", err);
+  }
 
     return res.json(appointment);
   }
