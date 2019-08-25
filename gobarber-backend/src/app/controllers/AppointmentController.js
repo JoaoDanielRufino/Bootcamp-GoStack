@@ -44,25 +44,25 @@ class AppointmentController {
       date: Yup.date().required()
     });
 
-    if(!(await schema.isValid(req.body))) {
+    if (!(await schema.isValid(req.body))) {
       return res.status(400).json({ error: 'Validation failed' });
     }
 
     const { provider_id, date } = req.body;
 
     const isProvider = await User.findOne({ where: { id: provider_id, provider: true } });
-    if(!isProvider) {
+    if (!isProvider) {
       return res.status(401).json({ error: 'You can only create an appointment with providers' });
     }
 
-    if(provider_id === req.userId) {
+    if (provider_id === req.userId) {
       return res.status(400).json({ error: 'You can not create an appointment with your self' });
     }
 
     // O parseISO transforma a variavel date em um objeto date javascript
     // O startOfHour considera apenas a hora, dispensado os minutos e segundos
     const hourStart = startOfHour(parseISO(date));
-    if(isBefore(hourStart, new Date())) {
+    if (isBefore(hourStart, new Date())) {
       return res.status(400).json({ error: 'Past dates are not permitted' });
     }
 
@@ -73,18 +73,17 @@ class AppointmentController {
         date: hourStart
       }
     });
-    if(checkAvailability) {
+    if (checkAvailability) {
       return res.status(400).json({ error: 'Appointment is not available' });
     }
- 
+
     let appointment = null;
-    try {
-        appointment = await Appointment.create({
-        user_id: req.userId,
-        provider_id,
-        date
-      });
-    
+    appointment = await Appointment.create({
+      user_id: req.userId,
+      provider_id,
+      date
+    });
+
 
     const user = await User.findByPk(req.userId);
     const formattedDate = format(hourStart, "'dia' dd 'de' MMMM', as' H:mm'h'", { locale: pt });
@@ -93,9 +92,6 @@ class AppointmentController {
       content: `Novo agendamento de ${user.name} para o ${formattedDate}`,
       user: provider_id
     });
-  } catch(err) {
-    console.log("ERRO - ", err);
-  }
 
     return res.json(appointment);
   }
@@ -107,28 +103,42 @@ class AppointmentController {
           model: User,
           as: 'provider',
           attributes: ['name', 'email']
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['name']
         }
       ]
     });
 
-    if(appointment.user_id !== req.userId) {
+    if (appointment.user_id !== req.userId) {
       return res.status(401).json({ error: 'You do not have permission to cancel this appointment' });
     }
 
     const dateWithSub = subHours(appointment.date, 2); // Subtraindo 2 horas
 
-    if(isBefore(dateWithSub, new Date())) {
+    if (isBefore(dateWithSub, new Date())) {
       return res.status(401).json({ error: 'You con only cancel appointmens 2 hours in advance' });
     }
 
     appointment.canceled_at = new Date();
     await appointment.save();
 
+    try {
     await Mail.sendMail({
       to: `${appointment.provider.name} <${appointment.provider.email}>`,
       subject: 'Agendamento cancelado',
-      text: 'Voce tem um novo cancelamento'
+      template: 'cancellation',
+      context: {
+        provider: appointment.provider.name,
+        user: appointment.user.name,
+        date: format(appointment.date, "'dia' dd 'de' MMMM', as' H:mm'h'", { locale: pt })
+      }
     });
+    } catch(err) {
+      console.log('ERRO: ', err);
+    }
 
     return res.json(appointment);
   }
