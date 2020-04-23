@@ -22,6 +22,8 @@ export function* signIn({ payload }) {
       return;
     }
 
+    api.defaults.headers['Authorization'] = `Bearer ${token}`;
+
     yield put(signInSuccess(token, user));
 
     history.push('/dashboard');
@@ -49,7 +51,19 @@ export function* signUp({ payload }) {
   }
 }
 
+export function setToken({ payload }) { // Adiciona o token se o usuario der um reload na aplicacao
+  if(!payload)
+    return;
+
+  const { token } = payload.auth;
+
+  if(token) {
+    api.defaults.headers['Authorization'] = `Bearer ${token}`;
+  }
+}
+
 export default all([
+  takeLatest('persist/REHYDRATE', setToken), // Caso o usuriario dar um reload na pagina, esta funcao sera chamada
   takeLatest('@auth/SIGN_IN_REQUEST', signIn),
   takeLatest('@auth/SIGN_UP_REQUEST', signUp)
 ]);
