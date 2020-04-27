@@ -4,8 +4,8 @@ import { utcToZonedTime } from 'date-fns-tz';
 import pt from 'date-fns/locale/pt';
 import api from '../../services/api';
 
-import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 
+<<<<<<< HEAD
 import { Container, Time } from './styles';
 
 const range = [8,9,10,11,12,13,14,15,16,17,18,19,20];
@@ -70,5 +70,12 @@ export default function Dashboard() {
         ))}
       </ul>
     </Container>
+=======
+export default function Dashboard() {
+  api.get('appointments');
+  
+  return (
+    <h1>Dashboard</h1>
+>>>>>>> parent of 9df0cdf... ...
   );
 }
